@@ -1,0 +1,36 @@
+[package]
+name = "shroud"
+version = "0.1.7"
+edition = "2021"
+description = "Universal library for discovering rendering functions of render engines: DirectX9, DirectX10, DirectX11, DirectX12, OpenGL, Vulkan"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/0xFounders/shroud"
+homepage = "https://github.com/0xFounders/shroud"
+documentation = "https://docs.rs/crate/shroud/latest"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+winapi = { version = "0.3.9", features = ["libloaderapi"] }
+scopeguard = { version = "1.1.0", optional = true }
+
+log = "0.4.17"
+thiserror = "1.0.37"
+
+strum = "0.24.1"
+strum_macros = "0.24.3"
+
+[features]
+default = []
+
+opengl = []
+vulkan = []
+directx9 = ["dep:scopeguard", "winapi/winuser","winapi/d3d9"]
+directx10 = ["dep:scopeguard", "winapi/winuser"]
+directx11 = ["dep:scopeguard", "winapi/winuser","winapi/d3d11"]
+directx12 = ["dep:scopeguard", "winapi/winuser","winapi/dxgi","winapi/d3d12"]
+
+[package.metadata.docs.rs]
+features = ["directx9", "directx10", "directx11", "directx12", "opengl", "vulkan"]
+default-target = "x86_64-pc-windows-msvc"
+targets = ["x86_64-pc-windows-msvc", "i686-pc-windows-msvc"]
