@@ -1,6 +1,6 @@
 [package]
 name = "shroud"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "universal library for graphics hooking directx9, directx10, directx11, directx12, openGl, vulcan"
 license = "MIT"
