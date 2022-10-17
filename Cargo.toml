@@ -18,7 +18,7 @@ strum = "0.24.1"
 strum_macros = "0.24.3"
 
 [features]
-default = ["vulkan"]
+default = []
 
 opengl = ["winapi/libloaderapi"]
 vulkan = ["winapi/libloaderapi"]
