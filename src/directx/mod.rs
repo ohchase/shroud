@@ -57,7 +57,6 @@ impl WindowClass {
 impl Drop for WindowClass {
     fn drop(&mut self) {
         unsafe {
-            println!("Dropping window class");
             UnregisterClassA(self.0.lpszClassName, self.0.hInstance);
         }
     }
@@ -95,7 +94,6 @@ impl Window {
 impl Drop for Window {
     fn drop(&mut self) {
         unsafe {
-            println!("Destroying window.");
             DestroyWindow(self.0);
         }
     }
