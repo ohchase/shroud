@@ -20,6 +20,8 @@ use crate::{
     ShroudError, ShroudResult,
 };
 
+use super::swapchain_util::default_swapchain_descriptor;
+
 #[derive(Debug, EnumIter, EnumCount)]
 pub enum DirectX12DeviceMethods {
     QueryInterface,
@@ -354,7 +356,7 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
     // create default swap chain descriptor, and create d3d12 swapchain
     let window_class = WindowClass::new("shroud\0");
     let window = Window::new("shroud\0", window_class);
-    let mut swapchain_desc = super::default_swapchain_descriptor(&window);
+    let mut swapchain_desc = default_swapchain_descriptor(&window);
     swapchain_desc.BufferCount = 2;
     swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 

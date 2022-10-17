@@ -9,7 +9,7 @@ use winapi::um::{
 
 use crate::{ShroudError, ShroudResult};
 
-use super::{Window, WindowClass};
+use super::{swapchain_util::default_swapchain_descriptor, Window, WindowClass};
 
 #[derive(Debug, EnumIter, EnumCount)]
 pub enum DirectX11SwapchainMethods {
@@ -281,7 +281,7 @@ impl std::fmt::Debug for DirectX11Methods {
 pub fn methods() -> ShroudResult<DirectX11Methods> {
     let window_class = WindowClass::new("shroud\0");
     let window = Window::new("shroud\0", window_class);
-    let swapchain_desc = super::default_swapchain_descriptor(&window);
+    let swapchain_desc = default_swapchain_descriptor(&window);
 
     let mut feature_level: D3D_FEATURE_LEVEL = 0;
     let feature_levels: [D3D_FEATURE_LEVEL; 2] = [D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_0];
