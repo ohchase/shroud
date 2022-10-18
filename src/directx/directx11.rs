@@ -309,6 +309,18 @@ pub fn methods() -> ShroudResult<DirectX11Methods> {
     if result < 0 {
         return Err(ShroudError::DirectX11CreateDeviceAndSwapchain(result));
     }
+    scopeguard::defer! {
+        unsafe {
+            log::info!("DirectX11 Swapchain has been released.");
+            (*swapchain).Release();
+
+            log::info!("DirectX11 Device has been released.");
+            (*device).Release();
+
+            log::info!("DirectX11 Context has been released.");
+            (*context).Release();
+        }
+    }
 
     let swapchain_methods = unsafe {
         std::slice::from_raw_parts(
@@ -333,13 +345,6 @@ pub fn methods() -> ShroudResult<DirectX11Methods> {
         )
         .to_vec()
     };
-
-    // Todo, these new safety drops because early errors will stop releasing.
-    unsafe {
-        (*swapchain).Release();
-        (*device).Release();
-        (*context).Release();
-    }
 
     Ok(DirectX11Methods {
         swapchain_methods,

@@ -281,12 +281,24 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
     if result < 0 {
         return Err(ShroudError::DirectX12CreateFactory(result));
     }
+    scopeguard::defer! {
+        unsafe {
+            log::info!("DirectX12 Factory has been released.");
+            (*factory).Release();
+        }
+    }
 
     // Initialize adapter
     let mut adapter = std::ptr::null_mut();
     let result = unsafe { (*factory).EnumAdapters(0, &mut adapter) };
     if result < 0 {
         return Err(ShroudError::DirectX12EnumAdapters(result));
+    }
+    scopeguard::defer! {
+        unsafe {
+            log::info!("DirectX12 Adapter has been released.");
+            (*adapter).Release();
+        }
     }
 
     // Initialize device
@@ -301,6 +313,12 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
     };
     if result < 0 {
         return Err(ShroudError::DirectX12CreateDevice(result));
+    }
+    scopeguard::defer! {
+        unsafe {
+            log::info!("DirectX12 Device has been released.");
+            (*device).Release();
+        }
     }
 
     // Create queue descriptor
@@ -323,6 +341,12 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
     if result < 0 {
         return Err(ShroudError::DirectX12CreateCommandQueue(result));
     }
+    scopeguard::defer! {
+        unsafe {
+            log::info!("DirectX12 Command Queue has been released.");
+            (*command_queue).Release();
+        }
+    }
 
     // Initialize command allocator
     let mut command_allocator: *mut ID3D12CommandAllocator = std::ptr::null_mut();
@@ -335,6 +359,12 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
     };
     if result < 0 {
         return Err(ShroudError::DirectX12CreateCommandAllocator(result));
+    }
+    scopeguard::defer! {
+        unsafe {
+            log::info!("DirectX12 Command Allocator has been released.");
+            (*command_allocator).Release();
+        }
     }
 
     // Initialize command list
@@ -352,6 +382,12 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
     if result < 0 {
         return Err(ShroudError::DirectX12CreateCommandList(result));
     }
+    scopeguard::defer! {
+        unsafe {
+            log::info!("DirectX12 Command List has been released.");
+            (*command_list).Release();
+        }
+    }
 
     // create default swap chain descriptor, and create d3d12 swapchain
     let window_class = WindowClass::new("shroud\0");
@@ -361,7 +397,6 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
     swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
     let mut swapchain = std::ptr::null_mut();
-
     let result = unsafe {
         (*factory).CreateSwapChain(
             command_queue as *mut _ as *mut IUnknown,
@@ -371,6 +406,12 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
     };
     if result < 0 {
         return Err(ShroudError::DirectX12CreateSwapchain(result));
+    }
+    scopeguard::defer! {
+        unsafe {
+            log::info!("DirectX12 Swapchain has been released.");
+            (*swapchain).Release();
+        }
     }
 
     let device_methods = unsafe {

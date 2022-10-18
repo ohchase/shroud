@@ -163,6 +163,12 @@ pub fn methods() -> ShroudResult<DirectX9Methods> {
     if result < 0 {
         return Err(ShroudError::DirectX9Create(result));
     }
+    scopeguard::defer! {
+        unsafe {
+            log::info!("Direct3D_9 has been released.");
+            (*direct3d_9).Release();
+        }
+    }
 
     let mut present_params = D3DPRESENT_PARAMETERS {
         BackBufferWidth: 0,
@@ -195,6 +201,12 @@ pub fn methods() -> ShroudResult<DirectX9Methods> {
     if result < 0 {
         return Err(ShroudError::DirectX9CreateDevice(result));
     }
+    scopeguard::defer! {
+        unsafe {
+            log::info!("DirectX9Device has been released.");
+            (*device).Release();
+        }
+    }
 
     let device_methods = unsafe {
         std::slice::from_raw_parts(
@@ -203,12 +215,6 @@ pub fn methods() -> ShroudResult<DirectX9Methods> {
         )
         .to_vec()
     };
-
-    // Todo, these new safety drops because early errors will stop releasing.
-    unsafe {
-        (*device).Release();
-        (*direct3d_9).Release();
-    }
 
     Ok(DirectX9Methods { device_methods })
 }

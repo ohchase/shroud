@@ -10,6 +10,7 @@ repository = "https://github.com/0xFounders/shroud"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 winapi = { version = "0.3.9", features = ["libloaderapi"] }
+scopeguard = { version = "1.1.0", optional = true }
 
 log = "0.4.17"
 thiserror = "1.0.37"
@@ -18,11 +19,11 @@ strum = "0.24.1"
 strum_macros = "0.24.3"
 
 [features]
-default = ["opengl", "vulkan"]
+default = ["directx9"]
 
 opengl = []
 vulkan = []
-directx9 = ["winapi/winuser","winapi/d3d9"]
-directx10 = ["winapi/winuser"]
-directx11 = ["winapi/winuser","winapi/d3d11"]
-directx12 = ["winapi/winuser","winapi/dxgi","winapi/d3d12"]
+directx9 = ["dep:scopeguard", "winapi/winuser","winapi/d3d9"]
+directx10 = ["dep:scopeguard", "winapi/winuser"]
+directx11 = ["dep:scopeguard", "winapi/winuser","winapi/d3d11"]
+directx12 = ["dep:scopeguard", "winapi/winuser","winapi/dxgi","winapi/d3d12"]
