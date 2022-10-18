@@ -15,10 +15,7 @@ use winapi::{
     Interface,
 };
 
-use crate::{
-    directx::{Window, WindowClass},
-    ShroudError, ShroudResult,
-};
+use crate::{directx::Window, ShroudError, ShroudResult};
 
 use super::swapchain_util::default_swapchain_descriptor;
 
@@ -390,8 +387,7 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
     }
 
     // create default swap chain descriptor, and create d3d12 swapchain
-    let window_class = WindowClass::new("shroud\0");
-    let window = Window::new("shroud\0", window_class);
+    let window = Window::default();
     let mut swapchain_desc = default_swapchain_descriptor(&window);
     swapchain_desc.BufferCount = 2;
     swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;

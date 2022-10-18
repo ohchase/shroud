@@ -13,7 +13,7 @@ use winapi::shared::{
 
 use crate::{ShroudError, ShroudResult};
 
-use super::{Window, WindowClass};
+use super::Window;
 
 #[derive(Debug, EnumIter, EnumCount)]
 pub enum DirectX9DeviceMethods {
@@ -155,8 +155,7 @@ impl std::fmt::Debug for DirectX9Methods {
 }
 
 pub fn methods() -> ShroudResult<DirectX9Methods> {
-    let window_class = WindowClass::new("shroud\0");
-    let window = Window::new("shroud\0", window_class);
+    let window = Window::default();
 
     let mut direct3d_9 = std::ptr::null_mut();
     let result = unsafe { Direct3DCreate9Ex(D3D_SDK_VERSION, &mut direct3d_9) };

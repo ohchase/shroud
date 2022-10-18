@@ -54,6 +54,12 @@ impl WindowClass {
     }
 }
 
+impl Default for WindowClass {
+    fn default() -> Self {
+        WindowClass::new("Shroud\0")
+    }
+}
+
 impl Drop for WindowClass {
     fn drop(&mut self) {
         unsafe {
@@ -88,6 +94,12 @@ impl Window {
 
     fn inner(&self) -> HWND {
         self.0
+    }
+}
+
+impl Default for Window {
+    fn default() -> Self {
+        Window::new("Shroud\0", WindowClass::default())
     }
 }
 
