@@ -229,9 +229,9 @@ pub enum DirectX11ContextMethods {
 }
 
 pub struct DirectX11Methods {
-    swapchain_methods: Vec<*const usize>,
-    device_methods: Vec<*const usize>,
-    context_methods: Vec<*const usize>,
+    swapchain_vmt: Vec<*const usize>,
+    device_vmt: Vec<*const usize>,
+    context_vmt: Vec<*const usize>,
 }
 
 impl std::fmt::Debug for DirectX11Methods {
@@ -239,37 +239,25 @@ impl std::fmt::Debug for DirectX11Methods {
         writeln!(f, "DirectX11 Method Table")?;
 
         let mut index = 0;
-        writeln!(f, "Swapchain Methods")?;
+        writeln!(f, "Swapchain Virtual Method Table")?;
         for (i, method) in DirectX11SwapchainMethods::iter().enumerate() {
-            writeln!(
-                f,
-                "\t[{}] {:?} {:#?}",
-                index, method, self.swapchain_methods[i]
-            )?;
+            writeln!(f, "\t[{}] {:?} {:#?}", index, method, self.swapchain_vmt[i])?;
 
             index += 1;
         }
         writeln!(f)?;
 
-        writeln!(f, "Devices Methods")?;
+        writeln!(f, "Devices Virtual Method Table")?;
         for (i, method) in DirectX11SwapchainMethods::iter().enumerate() {
-            writeln!(
-                f,
-                "\t[{}] {:?} {:#?}",
-                index, method, self.device_methods[i]
-            )?;
+            writeln!(f, "\t[{}] {:?} {:#?}", index, method, self.device_vmt[i])?;
 
             index += 1;
         }
         writeln!(f)?;
 
-        writeln!(f, "Context Methods")?;
+        writeln!(f, "Context Virtual Method Table")?;
         for (i, method) in DirectX11ContextMethods::iter().enumerate() {
-            writeln!(
-                f,
-                "\t[{}] {:?} {:#?}",
-                index, method, self.context_methods[i]
-            )?;
+            writeln!(f, "\t[{}] {:?} {:#?}", index, method, self.context_vmt[i])?;
 
             index += 1;
         }
@@ -321,7 +309,7 @@ pub fn methods() -> ShroudResult<DirectX11Methods> {
         }
     }
 
-    let swapchain_methods = unsafe {
+    let swapchain_vmt = unsafe {
         std::slice::from_raw_parts(
             (swapchain as *const *const *const usize).read(),
             DirectX11SwapchainMethods::COUNT,
@@ -329,7 +317,7 @@ pub fn methods() -> ShroudResult<DirectX11Methods> {
         .to_vec()
     };
 
-    let device_methods = unsafe {
+    let device_vmt = unsafe {
         std::slice::from_raw_parts(
             (device as *const *const *const usize).read(),
             DirectX11DeviceMethods::COUNT,
@@ -337,7 +325,7 @@ pub fn methods() -> ShroudResult<DirectX11Methods> {
         .to_vec()
     };
 
-    let context_methods = unsafe {
+    let context_vmt = unsafe {
         std::slice::from_raw_parts(
             (context as *const *const *const usize).read(),
             DirectX11ContextMethods::COUNT,
@@ -346,8 +334,8 @@ pub fn methods() -> ShroudResult<DirectX11Methods> {
     };
 
     Ok(DirectX11Methods {
-        swapchain_methods,
-        device_methods,
-        context_methods,
+        swapchain_vmt,
+        device_vmt,
+        context_vmt,
     })
 }

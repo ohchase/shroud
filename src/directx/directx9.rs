@@ -139,15 +139,15 @@ pub enum DirectX9DeviceMethods {
 }
 
 pub struct DirectX9Methods {
-    device_methods: Vec<*const usize>,
+    device_vmt: Vec<*const usize>,
 }
 
 impl std::fmt::Debug for DirectX9Methods {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "DirectX9 Method Table")?;
-        writeln!(f, "Devices Methods")?;
+        writeln!(f, "Devices Virtual Method Table")?;
         for (i, method) in DirectX9DeviceMethods::iter().enumerate() {
-            writeln!(f, "\t[{}] {:?} {:#?}", i, method, self.device_methods[i])?;
+            writeln!(f, "\t[{}] {:?} {:#?}", i, method, self.device_vmt[i])?;
         }
         writeln!(f)?;
         Ok(())
@@ -207,7 +207,7 @@ pub fn methods() -> ShroudResult<DirectX9Methods> {
         }
     }
 
-    let device_methods = unsafe {
+    let device_vmt = unsafe {
         std::slice::from_raw_parts(
             (device as *const *const *const usize).read(),
             DirectX9DeviceMethods::COUNT,
@@ -215,5 +215,5 @@ pub fn methods() -> ShroudResult<DirectX9Methods> {
         .to_vec()
     };
 
-    Ok(DirectX9Methods { device_methods })
+    Ok(DirectX9Methods { device_vmt })
 }

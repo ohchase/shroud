@@ -1,3 +1,5 @@
+use std::ffi::CString;
+
 use strum::{IntoEnumIterator, VariantNames};
 use strum_macros::{EnumCount, EnumIter, EnumVariantNames};
 
@@ -165,9 +167,8 @@ pub fn methods() -> ShroudResult<VulkanMethods> {
     let handle = RenderEngine::get_render_engine_handle(&RenderEngine::Vulkan)?;
 
     let mut static_methods: Vec<*const usize> = Vec::new();
-    for method_name in VulkanStaticMethods::VARIANTS {
-        let method_address =
-            unsafe { GetProcAddress(handle, [method_name, "\0"].join("").as_ptr() as *const i8) };
+    for &method_name in VulkanStaticMethods::VARIANTS {
+        let method_address = unsafe { GetProcAddress(handle, CString::new(method_name)?.as_ptr()) };
         static_methods.push(method_address as *const usize);
     }
 

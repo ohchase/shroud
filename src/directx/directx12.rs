@@ -190,11 +190,11 @@ pub enum DirectX12SwapchainMethods {
 }
 
 pub struct DirectX12Methods {
-    device_methods: Vec<*const usize>,
-    command_queue_methods: Vec<*const usize>,
-    command_allocator_methods: Vec<*const usize>,
-    command_list_methods: Vec<*const usize>,
-    swapchain_methods: Vec<*const usize>,
+    device_vmt: Vec<*const usize>,
+    command_queue_vmt: Vec<*const usize>,
+    command_allocator_vmt: Vec<*const usize>,
+    command_list_vmt: Vec<*const usize>,
+    swapchain_vmt: Vec<*const usize>,
 }
 
 impl std::fmt::Debug for DirectX12Methods {
@@ -202,61 +202,53 @@ impl std::fmt::Debug for DirectX12Methods {
         writeln!(f, "DirectX12 Method Table")?;
 
         let mut index = 0;
-        writeln!(f, "Device Methods")?;
+        writeln!(f, "Device Virtual Method Table")?;
         for (i, method) in DirectX12DeviceMethods::iter().enumerate() {
-            writeln!(
-                f,
-                "\t[{}] {:?} {:#?}",
-                index, method, self.device_methods[i]
-            )?;
+            writeln!(f, "\t[{}] {:?} {:#?}", index, method, self.device_vmt[i])?;
 
             index += 1;
         }
         writeln!(f)?;
 
-        writeln!(f, "Command Queue Methods")?;
+        writeln!(f, "Command Queue Virtual Method Table")?;
         for (i, method) in DirectX12CommandQueueMethods::iter().enumerate() {
             writeln!(
                 f,
                 "\t[{}] {:?} {:#?}",
-                index, method, self.command_queue_methods[i]
+                index, method, self.command_queue_vmt[i]
             )?;
 
             index += 1;
         }
         writeln!(f)?;
 
-        writeln!(f, "Command Allocator Methods")?;
+        writeln!(f, "Command Allocator Virtual Method Table")?;
         for (i, method) in DirectX12CommandAllocatorMethods::iter().enumerate() {
             writeln!(
                 f,
                 "\t[{}] {:?} {:#?}",
-                index, method, self.command_allocator_methods[i]
+                index, method, self.command_allocator_vmt[i]
             )?;
 
             index += 1;
         }
         writeln!(f)?;
 
-        writeln!(f, "Command List Methods")?;
+        writeln!(f, "Command List Virtual Method Table")?;
         for (i, method) in DirectX12CommandListMethods::iter().enumerate() {
             writeln!(
                 f,
                 "\t[{}] {:?} {:#?}",
-                index, method, self.command_list_methods[i]
+                index, method, self.command_list_vmt[i]
             )?;
 
             index += 1;
         }
         writeln!(f)?;
 
-        writeln!(f, "Swapchain Methods")?;
+        writeln!(f, "Swapchain Virtual Method Table")?;
         for (i, method) in DirectX12SwapchainMethods::iter().enumerate() {
-            writeln!(
-                f,
-                "\t[{}] {:?} {:#?}",
-                index, method, self.swapchain_methods[i]
-            )?;
+            writeln!(f, "\t[{}] {:?} {:#?}", index, method, self.swapchain_vmt[i])?;
 
             index += 1;
         }
@@ -410,21 +402,21 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
         }
     }
 
-    let device_methods = unsafe {
+    let device_vmt = unsafe {
         std::slice::from_raw_parts(
             (device as *const _ as *const *const *const usize).read(),
             DirectX12DeviceMethods::COUNT,
         )
         .to_vec()
     };
-    let command_queue_methods = unsafe {
+    let command_queue_vmt = unsafe {
         std::slice::from_raw_parts(
             (command_queue as *const _ as *const *const *const usize).read(),
             DirectX12CommandQueueMethods::COUNT,
         )
         .to_vec()
     };
-    let command_allocator_methods = unsafe {
+    let command_allocator_vmt = unsafe {
         std::slice::from_raw_parts(
             (command_allocator as *const _ as *const *const *const usize).read(),
             DirectX12CommandAllocatorMethods::COUNT,
@@ -432,7 +424,7 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
         .to_vec()
     };
 
-    let command_list_methods = unsafe {
+    let command_list_vmt = unsafe {
         std::slice::from_raw_parts(
             (command_list as *const _ as *const *const *const usize).read(),
             DirectX12CommandListMethods::COUNT,
@@ -440,7 +432,7 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
         .to_vec()
     };
 
-    let swapchain_methods = unsafe {
+    let swapchain_vmt = unsafe {
         std::slice::from_raw_parts(
             (swapchain as *const _ as *const *const *const usize).read(),
             DirectX12SwapchainMethods::COUNT,
@@ -448,20 +440,11 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
         .to_vec()
     };
 
-    // Todo, these new safety drops because early errors will stop releasing.
-    unsafe {
-        (*device).Release();
-        (*command_queue).Release();
-        (*command_allocator).Release();
-        (*command_list).Release();
-        (*swapchain).Release();
-    }
-
     Ok(DirectX12Methods {
-        device_methods,
-        command_queue_methods,
-        command_allocator_methods,
-        command_list_methods,
-        swapchain_methods,
+        device_vmt,
+        command_queue_vmt,
+        command_allocator_vmt,
+        command_list_vmt,
+        swapchain_vmt,
     })
 }
