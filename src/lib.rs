@@ -1,4 +1,9 @@
+use std::ffi::{IntoStringError, NulError};
+
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 use thiserror::Error;
+use winapi::{shared::minwindef::HMODULE, um::libloaderapi::GetModuleHandleA};
 
 #[cfg(any(
     feature = "directx9",
@@ -14,15 +19,60 @@ pub mod opengl;
 #[cfg(feature = "vulkan")]
 pub mod vulkan;
 
+static DIRECTX_9_DLL_NAME: &str = concat!("d3d9.dll", "\0");
+static DIRECTX_10_DLL_NAME: &str = concat!("d3d10.dll", "\0");
+static DIRECTX_11_DLL_NAME: &str = concat!("d3d11.dll", "\0");
+static DIRECTX_12_DLL_NAME: &str = concat!("d3d12.dll", "\0");
+static OPENGL_DLL_NAME: &str = concat!("opengl32.dll", "\0");
+static VULKAN_DLL_NAME: &str = concat!("vulkan-1.dll", "\0");
+
+#[derive(Debug, EnumIter)]
+pub enum RenderEngine {
+    DirectX9,
+    DirectX10,
+    DirectX11,
+    DirectX12,
+    OpenGL,
+    Vulkan,
+}
+
+pub fn detect_render_engine() -> Option<RenderEngine> {
+    RenderEngine::iter()
+        .find(|render_engine| RenderEngine::get_render_engine_handle(render_engine).is_ok())
+}
+
+impl RenderEngine {
+    pub(crate) fn get_render_engine_handle(render_engine: &RenderEngine) -> ShroudResult<HMODULE> {
+        let handle_name = RenderEngine::dll_name(render_engine);
+        let handle = unsafe { GetModuleHandleA(handle_name.as_ptr() as *const i8) };
+        if handle.is_null() {
+            return Err(ShroudError::OpenHandleError(handle_name.to_string()));
+        }
+        Ok(handle)
+    }
+
+    pub fn dll_name(entry: &RenderEngine) -> &str {
+        match entry {
+            RenderEngine::DirectX9 => DIRECTX_9_DLL_NAME,
+            RenderEngine::DirectX10 => DIRECTX_10_DLL_NAME,
+            RenderEngine::DirectX11 => DIRECTX_11_DLL_NAME,
+            RenderEngine::DirectX12 => DIRECTX_12_DLL_NAME,
+            RenderEngine::OpenGL => OPENGL_DLL_NAME,
+            RenderEngine::Vulkan => VULKAN_DLL_NAME,
+        }
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum ShroudError {
-    #[cfg(feature = "opengl")]
-    #[error("Error getting handle to opengl32.dll")]
-    OpenGlHandle(),
+    #[error("IntoString Error `{0:#?}`")]
+    IntoStringError(#[from] IntoStringError),
 
-    #[cfg(feature = "vulkan")]
-    #[error("Error getting handle to vulkan-1.dll")]
-    VulkanHandle(),
+    #[error("Std Nul Error `{0:#?}`")]
+    StdNulError(#[from] NulError),
+
+    #[error("Error opening handle for dll: ")]
+    OpenHandleError(String),
 
     #[cfg(feature = "directx9")]
     #[error("Error creating directx9 instance `{0:#?}`")]

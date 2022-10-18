@@ -1,8 +1,8 @@
 use strum::{IntoEnumIterator, VariantNames};
 use strum_macros::{EnumCount, EnumIter, EnumVariantNames};
 
-use crate::{ShroudError, ShroudResult};
-use winapi::um::libloaderapi::{GetModuleHandleA, GetProcAddress};
+use crate::{RenderEngine, ShroudResult};
+use winapi::um::libloaderapi::GetProcAddress;
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, EnumIter, EnumCount, EnumVariantNames)]
@@ -162,10 +162,7 @@ impl std::fmt::Debug for VulkanMethods {
 }
 
 pub fn methods() -> ShroudResult<VulkanMethods> {
-    let handle = unsafe { GetModuleHandleA("vulkan-1.dll\0".as_ptr() as *const i8) };
-    if handle.is_null() {
-        return Err(ShroudError::VulkanHandle());
-    }
+    let handle = RenderEngine::get_render_engine_handle(&RenderEngine::Vulkan)?;
 
     let mut static_methods: Vec<*const usize> = Vec::new();
     for method_name in VulkanStaticMethods::VARIANTS {

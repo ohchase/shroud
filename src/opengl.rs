@@ -1,9 +1,11 @@
+use std::ffi::CString;
+
 use strum::{IntoEnumIterator, VariantNames};
 use strum_macros::{EnumCount, EnumIter, EnumVariantNames};
 
-use winapi::um::libloaderapi::{GetModuleHandleA, GetProcAddress};
+use winapi::um::libloaderapi::GetProcAddress;
 
-use crate::{ShroudError, ShroudResult};
+use crate::{RenderEngine, ShroudResult};
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, EnumIter, EnumCount, EnumVariantNames)]
@@ -392,22 +394,17 @@ impl std::fmt::Debug for OpenGlMethods {
 }
 
 pub fn methods() -> ShroudResult<OpenGlMethods> {
-    let handle = unsafe { GetModuleHandleA("opengl32.dll\0".as_ptr() as *const i8) };
-    if handle.is_null() {
-        return Err(ShroudError::OpenGlHandle());
-    }
+    let handle = RenderEngine::get_render_engine_handle(&RenderEngine::OpenGL)?;
 
     let mut wgl_methods: Vec<*const usize> = Vec::new();
-    for method_name in OpenGlWglMethods::VARIANTS {
-        let method_address =
-            unsafe { GetProcAddress(handle, [method_name, "\0"].join("").as_ptr() as *const i8) };
+    for &method_name in OpenGlWglMethods::VARIANTS {
+        let method_address = unsafe { GetProcAddress(handle, CString::new(method_name)?.as_ptr()) };
         wgl_methods.push(method_address as *const usize);
     }
 
     let mut static_methods: Vec<*const usize> = Vec::new();
-    for method_name in OpenGlStaticMethods::VARIANTS {
-        let method_address =
-            unsafe { GetProcAddress(handle, [method_name, "\0"].join("").as_ptr() as *const i8) };
+    for &method_name in OpenGlStaticMethods::VARIANTS {
+        let method_address = unsafe { GetProcAddress(handle, CString::new(method_name)?.as_ptr()) };
         static_methods.push(method_address as *const usize);
     }
 
