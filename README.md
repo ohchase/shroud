@@ -17,18 +17,19 @@ For instance the DirectX9 EndScene hook, DirectX11 Present Hook, and OpenGL wglS
 - [x] Vulkan
 
 ## How to use
-In your `cargo.toml` specify the shroud dependency and the render engines you would like access to as feature flags
+In your `cargo.toml` specify the shroud dependency and the render engines you would like access to as feature flags.
+By default all render engines are enabled, which you probably do not need.
 
 For example targeting a DirectX9 Host/Game
 ```Toml
 [dependencies]
-shroud = { version = "0.1.1", features = ["directx9"] }
+shroud = { version = "0.1.1", default-features = false, features = ["directx9"] }
 ```
 
 And targeting a DirectX12 Host/Game..
 ```Toml
 [dependencies]
-shroud = { version = "0.1.1", features = ["directx12"] }
+shroud = { version = "0.1.1", default-features = false, features = ["directx12"] }
 ```
 
 ## Injected Demos / Use Case
