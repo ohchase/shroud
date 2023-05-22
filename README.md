@@ -1,20 +1,27 @@
 [![Crate](https://img.shields.io/crates/v/shroud.svg)](https://crates.io/crates/shroud)
 # Shroud
 Universal library for discovering common render engines functions.
-Supports DirectX9 (D3D9), DirectX10 (D3D10), DirectX11 (D3D11), DirectX12 (D3D12), OpenGL, Vulkan.
+Supports DirectX9 (D3D9), DirectX10 (D3D10), DirectX11 (D3D11), DirectX12 (D3D12).
 Currently only supports Windows, but OpenGL and Vulkan are candidates for making cross platform.
 
 ## Purpose
 Provide access to common render engine functions so that they can be hooked/augmented.
-For instance the DirectX9 EndScene hook, DirectX11 Present Hook, and OpenGL wglSwapBuffers hook.
+For instance the DirectX9 EndScene hook, DirectX11 Present Hook.
+
+## Change Log
+- 0.1.0
+Began as universal library for opengl and vulkan
+Used winapi unofficial api, prior to windows crate adoption.
+
+- 0.2.0 
+Removes OpenGl/Vulkan. There is better solutions for their loaders.
+Upgrades to Official microsoft windows crate.
 
 ## Support
 - [x] DirectX9
 - [ ] DirectX10**
 - [x] DirectX11
 - [x] DirectX12
-- [x] OpenGL
-- [x] Vulkan**
 
 ** Untested
 
@@ -25,78 +32,69 @@ By default all render engines are disabled.
 For example targeting a DirectX9 Host/Game
 ```Toml
 [dependencies]
-shroud = { version = "0.1.6", features = ["directx9"] }
+shroud = { version = "0.2.0", features = ["directx9"] }
 ```
 
 And targeting a DirectX12 Host/Game..
 ```Toml
 [dependencies]
-shroud = { version = "0.1.6", features = ["directx12"] }
+shroud = { version = "0.2.0", features = ["directx12"] }
 ```
 
 ## Injected Demos / Use Case
 The example code compiled as a dll and injected provides the results you see in the below demos.
 ```Rust
-// use shroud::directx::directx9;
-// use shroud::directx::directx10;
-// use shroud::directx::directx11;
-// use shroud::opengl;
-// use shroud::vulkan;
-use shroud::directx::directx12;
+use windows::Win32::{
+    Foundation::{BOOL, HMODULE},
+    System::{Console::AllocConsole, SystemServices::DLL_PROCESS_ATTACH},
+};
 
-use winapi::shared::minwindef::{BOOL, DWORD, HINSTANCE, LPVOID, TRUE};
-use winapi::um::consoleapi::AllocConsole;
-use winapi::um::winnt::DLL_PROCESS_ATTACH;
-
-#[allow(clippy::missing_safety_doc)]
-unsafe extern "system" fn dll_attach(_base: LPVOID) -> u32 {
-    AllocConsole();
-
-    // match directx9::methods
-    // match directx10::methods
-    // match directx11::methods
-    // match opengl::methods
-    // match vulkan::methods
-    match directx12::methods() {
-        Ok(methods) => {
-            println!("{:#?}", methods);
+unsafe extern "system" fn start_routine(_parameter: *mut std::ffi::c_void) -> u32 {
+    // match shroud::directx9::methods
+    // match shroud::directx10::methods
+    // match shroud::directx11::methods
+    match shroud::directx12::methods() {
+        Ok(m) => {
+            println!("{m:#?}");
         }
-        Err(err) => {
-            println!("Error on Methods Find: {:?}", err);
+        Err(e) => {
+            println!("{e:?}");
         }
     }
     0
 }
 
-
-// Dll Entry Function, immediately spawn thread and do our business else where
 #[no_mangle]
 #[allow(non_snake_case)]
-#[allow(clippy::missing_safety_doc)]
-pub unsafe extern "system" fn DllMain(
-    module: HINSTANCE,
-    call_reason: DWORD,
-    _reserved: LPVOID,
-) -> BOOL {
+pub extern "system" fn DllMain(dll_module: HMODULE, call_reason: u32, _reserved: usize) -> BOOL {
     if call_reason == DLL_PROCESS_ATTACH {
-        winapi::um::processthreadsapi::CreateThread(
-            std::ptr::null_mut(),
-            0,
-            Some(dll_attach),
-            module as _,
-            0,
-            std::ptr::null_mut(),
-        );
+        unsafe { AllocConsole() };
+        println!("Attached.");
 
-        TRUE
-    } else {
-        TRUE
+        let thread = unsafe {
+            windows::Win32::System::Threading::CreateThread(
+                None,
+                0,
+                Some(start_routine),
+                Some(dll_module.0 as *const std::ffi::c_void),
+                windows::Win32::System::Threading::THREAD_CREATION_FLAGS(0),
+                None,
+            )
+        };
+
+        match thread {
+            Ok(_handle) => {
+                println!("Created thread")
+            }
+            Err(e) => {
+                panic!("Unable to create thread {e:?}")
+            }
+        }
     }
+
+    true.into()
 }
 ```
-
-### OpenGL
-![OpenGL](docs/opengl.PNG)
 
 ### DirectX9
 ![DirectX9](docs/directx9.PNG)
@@ -109,6 +107,3 @@ Todo...
 
 ### DirectX12
 ![DirectX12](docs/directx12.PNG)
-
-### Vulkan
-Todo...

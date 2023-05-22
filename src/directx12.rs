@@ -1,23 +1,19 @@
 use strum::{EnumCount, IntoEnumIterator};
 use strum_macros::{EnumCount, EnumIter};
-use winapi::{
-    ctypes::c_void,
-    shared::dxgi::{CreateDXGIFactory, IDXGIFactory, DXGI_SWAP_EFFECT_FLIP_DISCARD},
-    um::{
-        d3d12::{
-            D3D12CreateDevice, ID3D12CommandAllocator, ID3D12CommandList, ID3D12CommandQueue,
-            ID3D12Device, ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE_DIRECT,
-            D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAG_NONE,
-        },
-        d3dcommon::D3D_FEATURE_LEVEL_11_0,
-        unknwnbase::IUnknown,
+use windows::Win32::Graphics::{
+    Direct3D::D3D_FEATURE_LEVEL_11_0,
+    Direct3D12::{
+        D3D12CreateDevice, ID3D12CommandAllocator, ID3D12CommandList, ID3D12CommandQueue,
+        ID3D12Device, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC,
+        D3D12_COMMAND_QUEUE_FLAG_NONE,
     },
-    Interface,
+    Dxgi::{CreateDXGIFactory, IDXGIFactory, IDXGISwapChain},
 };
 
-use crate::{directx::Window, ShroudError, ShroudResult};
-
-use super::swapchain_util::default_swapchain_descriptor;
+use crate::{
+    swapchain_util::{default_swapchain_descriptor, get_process_window},
+    ShroudError, ShroudResult,
+};
 
 #[derive(Debug, EnumIter, EnumCount)]
 pub enum DirectX12DeviceMethods {
@@ -198,23 +194,23 @@ pub struct DirectX12Methods {
 }
 
 impl DirectX12Methods {
-    fn device_vmt(&self) -> &Vec<*const usize> {
+    pub fn device_vmt(&self) -> &Vec<*const usize> {
         &self.device_vmt
     }
 
-    fn command_queue_vmt(&self) -> &Vec<*const usize> {
+    pub fn command_queue_vmt(&self) -> &Vec<*const usize> {
         &self.command_queue_vmt
     }
 
-    fn command_allocator_vmt(&self) -> &Vec<*const usize> {
+    pub fn command_allocator_vmt(&self) -> &Vec<*const usize> {
         &self.command_allocator_vmt
     }
 
-    fn command_list_vmt(&self) -> &Vec<*const usize> {
+    pub fn command_list_vmt(&self) -> &Vec<*const usize> {
         &self.command_list_vmt
     }
 
-    fn swapchain_vmt(&self) -> &Vec<*const usize> {
+    pub fn swapchain_vmt(&self) -> &Vec<*const usize> {
         &self.swapchain_vmt
     }
 }
@@ -282,55 +278,24 @@ impl std::fmt::Debug for DirectX12Methods {
 
 pub fn methods() -> ShroudResult<DirectX12Methods> {
     // Initialize Factory
-    let mut factory: *mut IDXGIFactory = std::ptr::null_mut();
-    let result = unsafe {
-        CreateDXGIFactory(
-            &IDXGIFactory::uuidof(),
-            &mut factory as *mut *mut _ as *mut *mut c_void,
-        )
-    };
-    if result < 0 {
-        return Err(ShroudError::DirectX12CreateFactory(result));
-    }
-    scopeguard::defer! {
-        unsafe {
-            log::info!("DirectX12 Factory has been released.");
-            (*factory).Release();
-        }
-    }
+    let factory: IDXGIFactory =
+        unsafe { CreateDXGIFactory().map_err(|e| ShroudError::DirectX12CreateFactory(e.code()))? };
 
     // Initialize adapter
-    let mut adapter = std::ptr::null_mut();
-    let result = unsafe { (*factory).EnumAdapters(0, &mut adapter) };
-    if result < 0 {
-        return Err(ShroudError::DirectX12EnumAdapters(result));
-    }
-    scopeguard::defer! {
-        unsafe {
-            log::info!("DirectX12 Adapter has been released.");
-            (*adapter).Release();
-        }
-    }
+    let adapter = unsafe {
+        factory
+            .EnumAdapters(0)
+            .map_err(|e| ShroudError::DirectX12EnumAdapters(e.code()))?
+    };
 
     // Initialize device
-    let mut device: *mut ID3D12Device = std::ptr::null_mut();
-    let result = unsafe {
-        D3D12CreateDevice(
-            adapter as *mut _ as *mut IUnknown,
-            D3D_FEATURE_LEVEL_11_0,
-            &ID3D12Device::uuidof(),
-            &mut device as *mut *mut _ as *mut *mut c_void,
-        )
+    let mut device = None;
+    unsafe {
+        D3D12CreateDevice(&adapter, D3D_FEATURE_LEVEL_11_0, &mut device)
+            .map_err(|e| ShroudError::DirectX12CreateFactory(e.code()))?
     };
-    if result < 0 {
-        return Err(ShroudError::DirectX12CreateDevice(result));
-    }
-    scopeguard::defer! {
-        unsafe {
-            log::info!("DirectX12 Device has been released.");
-            (*device).Release();
-        }
-    }
+    let device: ID3D12Device =
+        device.ok_or(ShroudError::Expectation("DirectX12 device populated"))?;
 
     // Create queue descriptor
     let queue_desc = D3D12_COMMAND_QUEUE_DESC {
@@ -341,106 +306,58 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
     };
 
     // Initialize command queue
-    let mut command_queue: *mut ID3D12CommandQueue = std::ptr::null_mut();
-    let result = unsafe {
-        (*device).CreateCommandQueue(
-            &queue_desc,
-            &ID3D12CommandQueue::uuidof(),
-            &mut command_queue as *mut *mut _ as *mut *mut c_void,
-        )
-    };
-    if result < 0 {
-        return Err(ShroudError::DirectX12CreateCommandQueue(result));
-    }
-    scopeguard::defer! {
-        unsafe {
-            log::info!("DirectX12 Command Queue has been released.");
-            (*command_queue).Release();
-        }
-    }
+    let command_queue: ID3D12CommandQueue = unsafe {
+        device
+            .CreateCommandQueue(&queue_desc)
+            .map_err(|e| ShroudError::DirectX12CreateCommandQueue(e.code()))
+    }?;
 
     // Initialize command allocator
-    let mut command_allocator: *mut ID3D12CommandAllocator = std::ptr::null_mut();
-    let result = unsafe {
-        (*device).CreateCommandAllocator(
-            D3D12_COMMAND_LIST_TYPE_DIRECT,
-            &ID3D12CommandAllocator::uuidof(),
-            &mut command_allocator as *mut *mut _ as *mut *mut c_void,
-        )
-    };
-    if result < 0 {
-        return Err(ShroudError::DirectX12CreateCommandAllocator(result));
-    }
-    scopeguard::defer! {
-        unsafe {
-            log::info!("DirectX12 Command Allocator has been released.");
-            (*command_allocator).Release();
-        }
-    }
+    let command_allocator: ID3D12CommandAllocator = unsafe {
+        device
+            .CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT)
+            .map_err(|e| ShroudError::DirectX12CreateCommandAllocator(e.code()))
+    }?;
 
     // Initialize command list
-    let mut command_list: *mut ID3D12CommandList = std::ptr::null_mut();
-    let result = unsafe {
-        (*device).CreateCommandList(
-            0,
-            D3D12_COMMAND_LIST_TYPE_DIRECT,
-            command_allocator,
-            std::ptr::null_mut(),
-            &ID3D12GraphicsCommandList::uuidof(),
-            &mut command_list as *mut *mut _ as *mut *mut c_void,
-        )
-    };
-    if result < 0 {
-        return Err(ShroudError::DirectX12CreateCommandList(result));
-    }
-    scopeguard::defer! {
-        unsafe {
-            log::info!("DirectX12 Command List has been released.");
-            (*command_list).Release();
-        }
-    }
+    let command_list: ID3D12CommandList = unsafe {
+        device
+            .CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &command_allocator, None)
+            .map_err(|e| ShroudError::DirectX12CreateCommandList(e.code()))
+    }?;
 
     // create default swap chain descriptor, and create d3d12 swapchain
-    let window = Window::default();
-    let mut swapchain_desc = default_swapchain_descriptor(&window);
-    swapchain_desc.BufferCount = 2;
-    swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    let window = get_process_window().ok_or(ShroudError::Window)?;
+    let swapchain_desc = default_swapchain_descriptor(window);
+    let mut swapchain = None;
 
-    let mut swapchain = std::ptr::null_mut();
-    let result = unsafe {
-        (*factory).CreateSwapChain(
-            command_queue as *mut _ as *mut IUnknown,
-            &mut swapchain_desc,
-            &mut swapchain,
-        )
-    };
-    if result < 0 {
-        return Err(ShroudError::DirectX12CreateSwapchain(result));
-    }
-    scopeguard::defer! {
-        unsafe {
-            log::info!("DirectX12 Swapchain has been released.");
-            (*swapchain).Release();
+    unsafe {
+        let res = factory.CreateSwapChain(&command_queue, &swapchain_desc, &mut swapchain);
+        if res.is_err() {
+            eprintln!("{:?}", res.message());
+            // return Err(ShroudError::DirectX12CreateSwapchain(res));
         }
-    }
+    };
+    let swapchain: IDXGISwapChain =
+        swapchain.ok_or(ShroudError::Expectation("DirectX12 swapchain populated"))?;
 
     let device_vmt = unsafe {
         std::slice::from_raw_parts(
-            (device as *const _ as *const *const *const usize).read(),
+            std::mem::transmute::<_, *const *const *const usize>(device).read(),
             DirectX12DeviceMethods::COUNT,
         )
         .to_vec()
     };
     let command_queue_vmt = unsafe {
         std::slice::from_raw_parts(
-            (command_queue as *const _ as *const *const *const usize).read(),
+            std::mem::transmute::<_, *const *const *const usize>(command_queue).read(),
             DirectX12CommandQueueMethods::COUNT,
         )
         .to_vec()
     };
     let command_allocator_vmt = unsafe {
         std::slice::from_raw_parts(
-            (command_allocator as *const _ as *const *const *const usize).read(),
+            std::mem::transmute::<_, *const *const *const usize>(command_allocator).read(),
             DirectX12CommandAllocatorMethods::COUNT,
         )
         .to_vec()
@@ -448,7 +365,7 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
 
     let command_list_vmt = unsafe {
         std::slice::from_raw_parts(
-            (command_list as *const _ as *const *const *const usize).read(),
+            std::mem::transmute::<_, *const *const *const usize>(command_list).read(),
             DirectX12CommandListMethods::COUNT,
         )
         .to_vec()
@@ -456,7 +373,7 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
 
     let swapchain_vmt = unsafe {
         std::slice::from_raw_parts(
-            (swapchain as *const _ as *const *const *const usize).read(),
+            std::mem::transmute::<_, *const *const *const usize>(swapchain).read(),
             DirectX12SwapchainMethods::COUNT,
         )
         .to_vec()

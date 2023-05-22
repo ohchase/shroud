@@ -1,15 +1,19 @@
 use strum::{EnumCount, IntoEnumIterator};
 use strum_macros::{EnumCount, EnumIter};
-use winapi::um::{
-    d3d11::{D3D11CreateDeviceAndSwapChain, D3D11_SDK_VERSION},
-    d3dcommon::{
-        D3D_DRIVER_TYPE_HARDWARE, D3D_FEATURE_LEVEL, D3D_FEATURE_LEVEL_10_0, D3D_FEATURE_LEVEL_11_0,
+use windows::Win32::Graphics::{
+    Direct3D::{
+        D3D_DRIVER_TYPE_HARDWARE, D3D_FEATURE_LEVEL, D3D_FEATURE_LEVEL_10_0, D3D_FEATURE_LEVEL_11_1,
     },
+    Direct3D11::{
+        D3D11CreateDeviceAndSwapChain, ID3D11Device, ID3D11DeviceContext, D3D11_SDK_VERSION,
+    },
+    Dxgi::IDXGISwapChain,
 };
 
-use crate::{ShroudError, ShroudResult};
-
-use super::{swapchain_util::default_swapchain_descriptor, Window};
+use crate::{
+    swapchain_util::{default_swapchain_descriptor, get_process_window},
+    ShroudError, ShroudResult,
+};
 
 #[derive(Debug, EnumIter, EnumCount)]
 pub enum DirectX11SwapchainMethods {
@@ -281,67 +285,53 @@ impl std::fmt::Debug for DirectX11Methods {
 }
 
 pub fn methods() -> ShroudResult<DirectX11Methods> {
-    let window = Window::default();
-    let swapchain_desc = default_swapchain_descriptor(&window);
+    let window = get_process_window().ok_or(ShroudError::Window)?;
+    let swapchain_desc = default_swapchain_descriptor(window);
+    let feature_level: *mut D3D_FEATURE_LEVEL = std::ptr::null_mut();
 
-    let mut feature_level: D3D_FEATURE_LEVEL = 0;
-    let feature_levels: [D3D_FEATURE_LEVEL; 2] = [D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_0];
+    let mut swapchain: Option<IDXGISwapChain> = None;
+    let mut device: Option<ID3D11Device> = None;
+    let mut device_context: Option<ID3D11DeviceContext> = None;
 
-    let mut swapchain = std::ptr::null_mut();
-    let mut device = std::ptr::null_mut();
-    let mut context = std::ptr::null_mut();
-
-    let result = unsafe {
+    unsafe {
         D3D11CreateDeviceAndSwapChain(
-            std::ptr::null_mut(),
+            None,
             D3D_DRIVER_TYPE_HARDWARE,
-            std::ptr::null_mut(),
-            0,
-            feature_levels.as_ptr(),
-            feature_levels.len() as u32,
+            None,
+            windows::Win32::Graphics::Direct3D11::D3D11_CREATE_DEVICE_FLAG(0),
+            Some(&[D3D_FEATURE_LEVEL_10_0, D3D_FEATURE_LEVEL_11_1]),
             D3D11_SDK_VERSION,
-            &swapchain_desc,
-            &mut swapchain,
-            &mut device,
-            &mut feature_level,
-            &mut context,
+            Some(&swapchain_desc),
+            Some(&mut swapchain),
+            Some(&mut device),
+            Some(feature_level),
+            Some(&mut device_context),
         )
-    };
-    if result < 0 {
-        return Err(ShroudError::DirectX11CreateDeviceAndSwapchain(result));
     }
-    scopeguard::defer! {
-        unsafe {
-            log::info!("DirectX11 Swapchain has been released.");
-            (*swapchain).Release();
+    .map_err(|e| ShroudError::DirectX11CreateDeviceAndSwapchain(e.code()))?;
 
-            log::info!("DirectX11 Device has been released.");
-            (*device).Release();
-
-            log::info!("DirectX11 Context has been released.");
-            (*context).Release();
-        }
-    }
-
+    let swapchain = swapchain.ok_or(ShroudError::Expectation("Dx11 Swapchain created"))?;
     let swapchain_vmt = unsafe {
         std::slice::from_raw_parts(
-            (swapchain as *const *const *const usize).read(),
+            std::mem::transmute::<_, *const *const *const usize>(swapchain).read(),
             DirectX11SwapchainMethods::COUNT,
         )
-        .to_vec()
-    };
+    }
+    .to_vec();
 
+    let device = device.ok_or(ShroudError::Expectation("Dx11 Device created"))?;
     let device_vmt = unsafe {
         std::slice::from_raw_parts(
-            (device as *const *const *const usize).read(),
+            std::mem::transmute::<_, *const *const *const usize>(device).read(),
             DirectX11DeviceMethods::COUNT,
         )
         .to_vec()
     };
 
+    let device_context = device_context.ok_or(ShroudError::Expectation("Dx11 Context created"))?;
     let context_vmt = unsafe {
         std::slice::from_raw_parts(
-            (context as *const *const *const usize).read(),
+            std::mem::transmute::<_, *const *const *const usize>(device_context).read(),
             DirectX11ContextMethods::COUNT,
         )
         .to_vec()
