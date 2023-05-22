@@ -1,19 +1,15 @@
 use strum::{EnumCount, IntoEnumIterator};
 use strum_macros::{EnumCount, EnumIter};
-use winapi::shared::{
-    d3d9::{
+use windows::Win32::{
+    Foundation::{FALSE, TRUE},
+    Graphics::Direct3D9::{
         Direct3DCreate9Ex, D3DADAPTER_DEFAULT, D3DCREATE_DISABLE_DRIVER_MANAGEMENT,
-        D3DCREATE_SOFTWARE_VERTEXPROCESSING, D3D_SDK_VERSION,
-    },
-    d3d9types::{
-        D3DDEVTYPE_NULLREF, D3DFMT_UNKNOWN, D3DMULTISAMPLE_NONE, D3DPRESENT_PARAMETERS,
-        D3DSWAPEFFECT_DISCARD,
+        D3DCREATE_SOFTWARE_VERTEXPROCESSING, D3DDEVTYPE_NULLREF, D3DFMT_UNKNOWN,
+        D3DMULTISAMPLE_NONE, D3DPRESENT_PARAMETERS, D3DSWAPEFFECT_DISCARD, D3D_SDK_VERSION,
     },
 };
 
-use crate::{ShroudError, ShroudResult};
-
-use super::Window;
+use crate::{swapchain_util::get_process_window, ShroudError, ShroudResult};
 
 #[derive(Debug, EnumIter, EnumCount)]
 pub enum DirectX9DeviceMethods {
@@ -161,19 +157,12 @@ impl std::fmt::Debug for DirectX9Methods {
 }
 
 pub fn methods() -> ShroudResult<DirectX9Methods> {
-    let window = Window::default();
+    let window = get_process_window().ok_or(ShroudError::Window)?;
+    // let swapchain_desc = default_swapchain_descriptor(window);
+    // let feature_level: *mut D3D_FEATURE_LEVEL = std::ptr::null_mut();
 
-    let mut direct3d_9 = std::ptr::null_mut();
-    let result = unsafe { Direct3DCreate9Ex(D3D_SDK_VERSION, &mut direct3d_9) };
-    if result < 0 {
-        return Err(ShroudError::DirectX9Create(result));
-    }
-    scopeguard::defer! {
-        unsafe {
-            log::info!("Direct3D_9 has been released.");
-            (*direct3d_9).Release();
-        }
-    }
+    let direct3d_9 = unsafe { Direct3DCreate9Ex(D3D_SDK_VERSION) }
+        .map_err(|e| ShroudError::DirectX9Create(e.code()))?;
 
     let mut present_params = D3DPRESENT_PARAMETERS {
         BackBufferWidth: 0,
@@ -183,39 +172,33 @@ pub fn methods() -> ShroudResult<DirectX9Methods> {
         MultiSampleType: D3DMULTISAMPLE_NONE,
         MultiSampleQuality: 0,
         SwapEffect: D3DSWAPEFFECT_DISCARD,
-        hDeviceWindow: window.inner(),
-        Windowed: 1,
-        EnableAutoDepthStencil: 0,
+        hDeviceWindow: window,
+        Windowed: TRUE,
+        EnableAutoDepthStencil: FALSE,
         AutoDepthStencilFormat: D3DFMT_UNKNOWN,
         Flags: 0,
         FullScreen_RefreshRateInHz: 0,
         PresentationInterval: 0,
     };
 
-    let mut device = std::ptr::null_mut();
-    let result = unsafe {
-        (*direct3d_9).CreateDevice(
-            D3DADAPTER_DEFAULT,
-            D3DDEVTYPE_NULLREF,
-            window.inner(),
-            D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_DISABLE_DRIVER_MANAGEMENT,
-            &mut present_params,
-            &mut device,
-        )
+    let mut device = None;
+    unsafe {
+        direct3d_9
+            .CreateDevice(
+                D3DADAPTER_DEFAULT,
+                D3DDEVTYPE_NULLREF,
+                window,
+                (D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_DISABLE_DRIVER_MANAGEMENT) as u32,
+                &mut present_params,
+                &mut device,
+            )
+            .map_err(|e| ShroudError::DirectX9CreateDevice(e.code()))?
     };
-    if result < 0 {
-        return Err(ShroudError::DirectX9CreateDevice(result));
-    }
-    scopeguard::defer! {
-        unsafe {
-            log::info!("DirectX9Device has been released.");
-            (*device).Release();
-        }
-    }
 
+    let device = device.ok_or(ShroudError::Expectation("Dx11 Context created"))?;
     let device_vmt = unsafe {
         std::slice::from_raw_parts(
-            (device as *const *const *const usize).read(),
+            std::mem::transmute::<_, *const *const *const usize>(device).read(),
             DirectX9DeviceMethods::COUNT,
         )
         .to_vec()

@@ -1,36 +1,43 @@
 [package]
 name = "shroud"
-version = "0.1.7"
+version = "0.2.0"
 edition = "2021"
-description = "Universal library for discovering rendering functions of render engines: DirectX9, DirectX10, DirectX11, DirectX12, OpenGL, Vulkan"
+description = "Universal library for discovering rendering functions of render engines: DirectX9, DirectX10, DirectX11, DirectX12"
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/0xFounders/shroud"
-homepage = "https://github.com/0xFounders/shroud"
+repository = "https://github.com/ohchase/shroud"
+homepage = "https://github.com/ohchase/shroud"
 documentation = "https://docs.rs/crate/shroud/latest"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-winapi = { version = "0.3.9", features = ["libloaderapi"] }
-scopeguard = { version = "1.1.0", optional = true }
+windows = { version = "0.48.0", features = [
+    "Win32_Foundation",
+    "Win32_System_SystemServices",
+    "Win32_System_Threading",
+    "Win32_System_LibraryLoader",
 
-log = "0.4.17"
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Graphics_Gdi",
+    "Win32_UI_Input_KeyboardAndMouse",
+
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Dxgi_Common",
+] }
 thiserror = "1.0.37"
 
 strum = "0.24.1"
 strum_macros = "0.24.3"
 
 [features]
-default = []
+default = ["directx9", "directx11", "directx12"]
 
-opengl = []
-vulkan = []
-directx9 = ["dep:scopeguard", "winapi/winuser","winapi/d3d9"]
-directx10 = ["dep:scopeguard", "winapi/winuser"]
-directx11 = ["dep:scopeguard", "winapi/winuser","winapi/d3d11"]
-directx12 = ["dep:scopeguard", "winapi/winuser","winapi/dxgi","winapi/d3d12"]
+directx9 = ["windows/Win32_Graphics_Direct3D9"]
+directx10 = []
+directx11 = ["windows/Win32_Graphics_Direct3D11"]
+directx12 = ["windows/Win32_Graphics_Direct3D12"]
 
 [package.metadata.docs.rs]
-features = ["directx9", "directx10", "directx11", "directx12", "opengl", "vulkan"]
+features = ["directx9", "directx10", "directx11", "directx12"]
 default-target = "x86_64-pc-windows-msvc"
 targets = ["x86_64-pc-windows-msvc", "i686-pc-windows-msvc"]
