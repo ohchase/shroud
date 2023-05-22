@@ -7,7 +7,7 @@ use windows::Win32::Graphics::{
         ID3D12Device, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_DESC,
         D3D12_COMMAND_QUEUE_FLAG_NONE,
     },
-    Dxgi::{CreateDXGIFactory, IDXGIFactory, IDXGISwapChain, DXGI_SWAP_EFFECT_FLIP_DISCARD},
+    Dxgi::{CreateDXGIFactory, IDXGIFactory, IDXGISwapChain},
 };
 
 use crate::{
@@ -328,19 +328,18 @@ pub fn methods() -> ShroudResult<DirectX12Methods> {
 
     // create default swap chain descriptor, and create d3d12 swapchain
     let window = get_process_window().ok_or(ShroudError::Window)?;
-    let mut swapchain_desc = default_swapchain_descriptor(window);
-    swapchain_desc.BufferCount = 2;
-    swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-
+    let swapchain_desc = default_swapchain_descriptor(window);
     let mut swapchain = None;
+
     unsafe {
-        let res = factory.CreateSwapChain(&device, &swapchain_desc, &mut swapchain);
+        let res = factory.CreateSwapChain(&command_queue, &swapchain_desc, &mut swapchain);
         if res.is_err() {
-            return Err(ShroudError::DirectX12CreateSwapchain(res));
+            eprintln!("{:?}", res.message());
+            // return Err(ShroudError::DirectX12CreateSwapchain(res));
         }
     };
     let swapchain: IDXGISwapChain =
-        swapchain.ok_or(ShroudError::Expectation("DirectX12 device populated"))?;
+        swapchain.ok_or(ShroudError::Expectation("DirectX12 swapchain populated"))?;
 
     let device_vmt = unsafe {
         std::slice::from_raw_parts(

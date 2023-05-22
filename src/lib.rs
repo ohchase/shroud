@@ -24,7 +24,7 @@ pub mod directx11;
 pub mod directx12;
 
 #[cfg(any(feature = "directx11", feature = "directx12"))]
-mod swapchain_util;
+pub mod swapchain_util;
 
 static DIRECTX_9_DLL_NAME: &str = concat!("d3d9.dll", "\0");
 static DIRECTX_10_DLL_NAME: &str = concat!("d3d10.dll", "\0");
