@@ -5,7 +5,7 @@ use windows::Win32::{
     Graphics::Dxgi::{
         Common::{DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_MODE_DESC, DXGI_RATIONAL, DXGI_SAMPLE_DESC},
         IDXGISwapChain, DXGI_SWAP_CHAIN_DESC, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH,
-        DXGI_SWAP_EFFECT_FLIP_DISCARD, DXGI_USAGE_RENDER_TARGET_OUTPUT,
+        DXGI_SWAP_EFFECT_DISCARD, DXGI_USAGE_RENDER_TARGET_OUTPUT,
     },
     UI::WindowsAndMessaging::{EnumWindows, GetWindowThreadProcessId},
 };
@@ -71,7 +71,7 @@ pub fn default_swapchain_descriptor(window: HWND) -> DXGI_SWAP_CHAIN_DESC {
         BufferCount: 2,
         OutputWindow: window,
         Windowed: true.into(),
-        SwapEffect: DXGI_SWAP_EFFECT_FLIP_DISCARD,
+        SwapEffect: DXGI_SWAP_EFFECT_DISCARD,
         Flags: DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH.0 as u32,
     }
 }
