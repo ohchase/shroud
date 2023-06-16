@@ -30,7 +30,7 @@ strum = "0.24.1"
 strum_macros = "0.24.3"
 
 [features]
-default = ["directx9", "directx11", "directx12"]
+default = ["directx12"]
 
 directx9 = ["windows/Win32_Graphics_Direct3D9"]
 directx10 = []

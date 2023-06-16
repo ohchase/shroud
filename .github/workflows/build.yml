@@ -3,9 +3,13 @@ on: [push, pull_request]
 name: Continuous integration
 
 jobs:
+
   check:
     name: Check
     runs-on: windows-latest
+    strategy: 
+      matrix:
+        feature: [ directx9, directx10, directx11, directx12 ]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -18,10 +22,14 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
+          args: --features ${{ matrix.feature }}
 
   test:
     name: Test Suite
     runs-on: windows-latest
+    strategy: 
+      matrix:
+        feature: [ directx9, directx10, directx11, directx12 ]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -34,10 +42,14 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --features ${{ matrix.feature }}
 
   fmt:
     name: Rustfmt
     runs-on: windows-latest
+    strategy: 
+      matrix:
+        feature: [ directx9, directx10, directx11, directx12 ]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -51,11 +63,14 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --all -- --check
+          args: --all -- --check --features ${{ matrix.feature }}
 
   clippy:
     name: Clippy
     runs-on: windows-latest
+    strategy: 
+      matrix:
+        feature: [ directx9, directx10, directx11, directx12 ]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -69,4 +84,4 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: -- -D warnings
+          args: -- -D warnings --features ${{ matrix.feature }}
