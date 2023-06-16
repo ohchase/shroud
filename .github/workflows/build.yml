@@ -24,6 +24,42 @@ jobs:
           command: check
           args: --features ${{ matrix.feature }}
 
+  fmt:
+    name: Rustfmt
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings 
+          
   test:
     name: Test Suite
     runs-on: windows-latest
@@ -43,45 +79,3 @@ jobs:
         with:
           command: test
           args: --features ${{ matrix.feature }}
-
-  fmt:
-    name: Rustfmt
-    runs-on: windows-latest
-    strategy: 
-      matrix:
-        feature: [ directx9, directx10, directx11, directx12 ]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - run: rustup component add rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check --features ${{ matrix.feature }}
-
-  clippy:
-    name: Clippy
-    runs-on: windows-latest
-    strategy: 
-      matrix:
-        feature: [ directx9, directx10, directx11, directx12 ]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - run: rustup component add clippy
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings --features ${{ matrix.feature }}
