@@ -9,7 +9,7 @@ use windows::Win32::{
     },
 };
 
-use crate::{swapchain_util::get_process_window, ShroudError, ShroudResult};
+use crate::{get_process_window, ShroudError, ShroudResult};
 
 #[derive(Debug, EnumIter, EnumCount)]
 pub enum DirectX9DeviceMethods {

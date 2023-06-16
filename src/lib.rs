@@ -5,7 +5,11 @@ use strum_macros::EnumIter;
 use thiserror::Error;
 use windows::{
     core::{HRESULT, PCSTR},
-    Win32::{Foundation::HMODULE, System::LibraryLoader::GetModuleHandleA},
+    Win32::{
+        Foundation::{BOOL, HMODULE, HWND, LPARAM},
+        System::LibraryLoader::GetModuleHandleA,
+        UI::WindowsAndMessaging::{EnumWindows, GetWindowThreadProcessId},
+    },
 };
 
 #[cfg(not(target_os = "windows"))]
@@ -25,6 +29,34 @@ pub mod directx12;
 
 #[cfg(any(feature = "directx11", feature = "directx12"))]
 pub mod swapchain_util;
+
+pub(crate) fn get_process_window() -> Option<HWND> {
+    extern "system" fn enum_windows_callback(hwnd: HWND, l_param: LPARAM) -> BOOL {
+        let mut wnd_proc_id: u32 = 0;
+        unsafe {
+            GetWindowThreadProcessId(hwnd, Some(&mut wnd_proc_id));
+            if std::process::id() != wnd_proc_id {
+                return true.into();
+            }
+
+            *(l_param.0 as *mut HWND) = hwnd;
+        }
+        false.into()
+    }
+
+    let mut output: HWND = HWND(0);
+    unsafe {
+        EnumWindows(
+            Some(enum_windows_callback),
+            std::mem::transmute::<_, LPARAM>(&mut output as *mut HWND),
+        )
+    };
+
+    match output.0 == 0 {
+        true => None,
+        false => Some(output),
+    }
+}
 
 static DIRECTX_9_DLL_NAME: &str = concat!("d3d9.dll", "\0");
 static DIRECTX_10_DLL_NAME: &str = concat!("d3d10.dll", "\0");

@@ -1,4 +1,7 @@
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches: master
 
 name: Continuous integration
 
@@ -6,6 +9,9 @@ jobs:
   check:
     name: Check
     runs-on: windows-latest
+    strategy: 
+      matrix:
+        feature: [ directx9, directx10, directx11, directx12 ]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -18,22 +24,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-
-  test:
-    name: Test Suite
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
+          args: --features ${{ matrix.feature }}
 
   fmt:
     name: Rustfmt
@@ -69,4 +60,24 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: -- -D warnings
+          args: -- -D warnings 
+          
+  test:
+    name: Test Suite
+    runs-on: windows-latest
+    strategy: 
+      matrix:
+        feature: [ directx9, directx10, directx11, directx12 ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features ${{ matrix.feature }}

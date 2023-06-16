@@ -13,7 +13,7 @@ For instance the DirectX9 EndScene hook, DirectX11 Present Hook.
 Began as universal library for opengl and vulkan
 Used winapi unofficial api, prior to windows crate adoption.
 
-- 0.2.0 
+- 0.2.2 
 Removes OpenGl/Vulkan. There is better solutions for their loaders.
 Upgrades to Official microsoft windows crate.
 
@@ -32,13 +32,13 @@ By default all render engines are disabled.
 For example targeting a DirectX9 Host/Game
 ```Toml
 [dependencies]
-shroud = { version = "0.2.0", features = ["directx9"] }
+shroud = { version = "0.2.2", features = ["directx9"] }
 ```
 
 And targeting a DirectX12 Host/Game..
 ```Toml
 [dependencies]
-shroud = { version = "0.2.0", features = ["directx12"] }
+shroud = { version = "0.2.2", features = ["directx12"] }
 ```
 
 ## Injected Demos / Use Case

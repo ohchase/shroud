@@ -11,8 +11,7 @@ use windows::Win32::Graphics::{
 };
 
 use crate::{
-    swapchain_util::{default_swapchain_descriptor, get_process_window},
-    ShroudError, ShroudResult,
+    get_process_window, swapchain_util::default_swapchain_descriptor, ShroudError, ShroudResult,
 };
 
 #[derive(Debug, EnumIter, EnumCount)]
