@@ -38,7 +38,8 @@ unsafe extern "system" fn start_routine(_parameter: *mut std::ffi::c_void) -> u3
 #[allow(non_snake_case)]
 pub extern "system" fn DllMain(dll_module: HMODULE, call_reason: u32, _reserved: usize) -> BOOL {
     if call_reason == DLL_PROCESS_ATTACH {
-        unsafe { AllocConsole() };
+        let _ = unsafe { AllocConsole() };
+
         println!("Attached.");
 
         let thread = unsafe {

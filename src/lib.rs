@@ -50,6 +50,7 @@ pub(crate) fn get_process_window() -> Option<HWND> {
             Some(enum_windows_callback),
             std::mem::transmute::<_, LPARAM>(&mut output as *mut HWND),
         )
+        .ok()?
     };
 
     match output.0 == 0 {
