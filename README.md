@@ -32,13 +32,13 @@ By default all render engines are disabled.
 For example targeting a DirectX9 Host/Game
 ```Toml
 [dependencies]
-shroud = { version = "0.2.2", features = ["directx9"] }
+shroud = { version = "0.2.3", features = ["directx9"] }
 ```
 
 And targeting a DirectX12 Host/Game..
 ```Toml
 [dependencies]
-shroud = { version = "0.2.2", features = ["directx12"] }
+shroud = { version = "0.2.3", features = ["directx12"] }
 ```
 
 ## Injected Demos / Use Case
@@ -97,13 +97,13 @@ pub extern "system" fn DllMain(dll_module: HMODULE, call_reason: u32, _reserved:
 ```
 
 ### DirectX9
-![DirectX9](docs/directx9.PNG)
+![DirectX9](https://github.com/ohchase/shroud/blob/master/docs/directx9.PNG)
 
 ### DirectX10
 Todo...
 
 ### DirectX11
-![DirectX11](docs/directx11.PNG)
+![DirectX11](https://github.com/ohchase/shroud/blob/master/docs/directx11.PNG)
 
 ### DirectX12
-![DirectX12](docs/directx12.PNG)
+![DirectX12](https://github.com/ohchase/shroud/blob/master/docs/directx12.PNG)
