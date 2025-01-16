@@ -1,5 +1,7 @@
-[![Crate](https://img.shields.io/crates/v/shroud.svg)](https://crates.io/crates/shroud)
 # Shroud
+[![Crate](https://img.shields.io/crates/v/shroud.svg)](https://crates.io/crates/shroud)
+![Crates.io License](https://img.shields.io/crates/l/shroud)
+
 Universal library for discovering common render engines functions.
 Supports DirectX9 (D3D9), DirectX10 (D3D10), DirectX11 (D3D11), DirectX12 (D3D12).
 Currently only supports Windows, but OpenGL and Vulkan are candidates for making cross platform.
