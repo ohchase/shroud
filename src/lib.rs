@@ -8,7 +8,7 @@ use windows::{
     Win32::{
         Foundation::{BOOL, HMODULE, HWND, LPARAM},
         System::LibraryLoader::GetModuleHandleA,
-        UI::WindowsAndMessaging::{EnumWindows, GetWindowThreadProcessId},
+        UI::WindowsAndMessaging::{EnumWindows, GetWindow, GetWindowThreadProcessId, IsWindowVisible, GW_OWNER},
     },
 };
 
@@ -38,22 +38,29 @@ pub(crate) fn get_process_window() -> Option<HWND> {
             if std::process::id() != wnd_proc_id {
                 return true.into();
             }
+            // windows has an owner => not a main window
+            if GetWindow(hwnd, GW_OWNER).is_ok() {
+                return true.into();
+            }
+            // skip invisible windows
+            if !IsWindowVisible(hwnd).as_bool() {
+                return true.into();
+            }
 
             *(l_param.0 as *mut HWND) = hwnd;
         }
         false.into()
     }
 
-    let mut output: HWND = HWND(0);
+    let mut output: HWND = HWND::default();
     unsafe {
-        EnumWindows(
+        let _ = EnumWindows(
             Some(enum_windows_callback),
             std::mem::transmute::<_, LPARAM>(&mut output as *mut HWND),
-        )
-        .ok()?
+        );
     };
 
-    match output.0 == 0 {
+    match output.is_invalid() {
         true => None,
         false => Some(output),
     }
